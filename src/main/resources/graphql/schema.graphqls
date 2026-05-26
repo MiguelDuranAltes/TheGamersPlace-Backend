@@ -1,0 +1,235 @@
+# schema.graphqls
+
+# User types
+type UserInfo {
+    login: String!
+    name: String
+    imageUrl: String!
+    city: String
+    blocked: Boolean!
+    admin: Boolean!
+    reviews: [Review]
+    videogamesVoted: Int!
+}
+
+type UserPublic {
+    login: String!
+    admin: Boolean!
+    blocked: Boolean!
+}
+
+type UserList {
+    users: [UserPublic!]!
+}
+
+input UserInput {
+    login: String!
+    password: String!
+}
+
+input UserInfoInput {
+    login: String!
+    name: String
+    imageName: String
+    city: String
+    blocked: Boolean!
+    admin: Boolean!
+}
+
+type Image {
+    alias: String!
+    url: String!
+}
+
+# Videogame types
+
+type Requirement{
+    minimum: String
+    recommended: String
+}
+
+type Platform {
+    name: String!
+    slug: String!
+    requirements: Requirement
+}
+
+type Store {
+    name: String!
+    slug: String!
+}
+
+type Rating {
+    title: String!
+    count: Int!
+    percent: Float!
+}
+
+type Videogame {
+    id: Int!
+    name: String!
+    slug: String!
+    releaseDate: String!
+    background: String!
+    rating: Float!
+    metacritic: Int
+    playtime: Int!
+    screenshots: [String]!
+    genres: [String]!
+    platforms: [Platform]!
+    stores: [Store]!
+    tags: [String]!
+    ratings: [Rating]!
+    reviews: [Review]
+}
+
+type VideogameCard {
+    id: Int!
+    name: String!
+    slug: String!
+    background: String
+    rating: Float
+    metacritic: Int
+}
+
+type VideogameCardFeatures{
+    id: Int!
+    name: String!
+    slug: String!
+    background: String
+    metacritic: Int
+    genres: [String]!
+    tags: [String]!
+    platforms: [String]!
+}
+
+type VideogameList {
+    name: String!
+    videogames: [VideogameCard]!
+    publicView: Boolean!
+}
+
+input VideogameFilterInput {
+    name: String
+    platforms: [String]
+    genres: [String]
+    tags: [String]
+    rating: Float
+    releaseYear: String
+    orderByRatingDesc: Boolean
+    orderByReleaseDateDesc: Boolean
+}
+
+input PageInput {
+    page: Int!
+    size: Int!
+}
+
+type PageInfo {
+    totalElements: Int!
+    totalPages: Int!
+    currentPage: Int!
+}
+
+type VideogamePage {
+    content: [VideogameCard!]!
+    pageInfo: PageInfo!
+}
+
+#Reviews
+
+input ReviewInput {
+    rating: Int!
+    comment: String
+    videogame: String!
+    login: String!
+}
+
+input ReviewInfoInput {
+    videogame: String!
+    login: String!
+}
+
+type Review {
+    rating: Int!
+    comment: String
+    videogame: String!
+    login: String!
+}
+
+#Recommendations
+type Option {
+    Option1: VideogameCardFeatures
+    Option2: VideogameCardFeatures
+}
+
+
+
+input Choice {
+    like: Int!
+    dislike: Int!
+}
+
+
+
+
+# Define the Query type for Read operations
+type Query {
+    # Queries de usuarios
+    getUser(login: String!): UserInfo!
+    getUsers: UserList!
+    getAllImages: [Image]!
+    getReview(videogame: String!, login: String!): Int!
+
+    # Queries de videojuegos
+    getVideogameById(id: Int!): Videogame
+    getAllVideogames(pageInput: PageInput!): VideogamePage!
+    getVideogamesFiltered(filter: VideogameFilterInput!, pageInput: PageInput!): VideogamePage!
+
+    # Queries de plataformas, géneros y tags
+    getAllPlatforms: [String]!
+    getAllGenres: [String]!
+    getAllTags: [String]!
+
+    # Queries de favoritos y jugados
+    isOnFavourites(videogameId: Int!): Boolean!
+    getFavourites(login: String!): [VideogameCard]!
+    isOnPlayed(videogameId: Int!): Boolean!
+    getPlayed(login: String!): [VideogameCard]!
+
+    showAllVideogamesList(login: String!): [String]!
+    getVideogameList(listName: String!, login: String!): VideogameList
+
+    getRandomVideogames: [Option]!
+    getRecommendations(choices: [Choice!]): [VideogameCardFeatures]!
+}
+
+# Define the Mutation type for Create, Update, and Delete operations
+type Mutation {
+    # Mutations de administración de usuarios
+    createAdmin(input: UserInput!): Boolean
+    updateUser(input: UserInfoInput!): UserInfo
+    updateBlocked(login: String!): Boolean
+    deleteUser(login: String!): Boolean
+
+    # Mutations de favoritos, jugados y vistos
+    addVideogameToFavourites(videogameId: Int!): [VideogameCard]!
+    removeVideogameFromFavourites(videogameId: Int!): [VideogameCard]!
+    addVideogameToPlayed(videogameId: Int!): [VideogameCard]!
+    removeVideogameFromPlayed(videogameId: Int!): [VideogameCard]!
+
+    addVideogameToWatched(videogameId: Int!): [Int]!
+
+    # Mutations de listas personalizadas de videojuegos
+    addVideogameToList(listName: String!, idVideogame: Int!): VideogameList!
+    removeVideogameFromList(listName: String!, idVideogame: Int!): VideogameList!
+    createVideogameList(listName: String!, isPublic: Boolean!): VideogameList!
+    removeVideogameList(listName: String!): Boolean!
+    changeViewList(listName: String!): VideogameList!
+
+    # Mutations of reviews
+    addReview(review: ReviewInput!): UserInfo!
+    removeReview(reviewInput: ReviewInfoInput!): UserInfo!
+}
+
+

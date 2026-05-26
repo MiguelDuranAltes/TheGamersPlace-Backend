@@ -1,0 +1,119 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.1.3'
+    id 'io.spring.dependency-management' version '1.1.3'
+    id 'jacoco'
+    id "io.github.kobylynskyi.graphql.codegen" version "5.10.0"
+}
+
+group = 'com.hevlar.intro'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+springBoot {
+    mainClass = 'com.thegamersplace.TheGamersClientServer'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb:3.1.3'
+    implementation 'org.springframework.boot:spring-boot-starter-graphql:3.1.3'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    implementation 'jakarta.servlet:jakarta.servlet-api:6.0.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
+
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:3.1.3'
+    testImplementation 'org.springframework.graphql:spring-graphql-test:1.2.2'
+
+    implementation 'ch.qos.logback:logback-classic:1.4.8'
+    implementation 'org.slf4j:slf4j-api:2.0.7'
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport // report is always generated after tests run
+}
+
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+}
+
+tasks.compileJava.dependsOn('graphqlCodegen')
+
+bootJar {
+    mainClass = 'com.thegamersplace.TheGamersClientServer'
+    archiveFileName = 'server-app.jar'
+}
+
+jar {
+    enabled = false
+}
+
+graphqlCodegen {
+    outputDir = new File("$projectDir/src/main/java")
+    apiPackageName = "com.thegamersplace.infrastructure.graphql.resolvers"
+    modelPackageName = "com.thegamersplace.infrastructure.graphql.types"
+    customTypesMapping = [
+            Date      : "java.time.LocalDateTime",
+            Duration  : "java.time.Duration",
+            JSON      : "java.lang.Object",
+            Long      : "java.lang.Long",
+            BigDecimal: "java.math.BigDecimal"
+    ]
+    modelNameSuffix = "GraphqlType"
+    modelValidationAnnotation = "@jakarta.validation.constraints.NotNull"
+    generateApis = false
+    generateEqualsAndHashCode = true
+}
+
+// Verify that the produced bootJar contains the application main class.
+// This will fail the build early in CI (Railway) if the JAR executed at runtime
+// would not be able to find the main class (helps debugging ClassNotFoundException).
+tasks.register('verifyMainInJar') {
+    dependsOn bootJar
+    doLast {
+        def jarFile = file("${buildDir}/libs/server-app.jar")
+        if (!jarFile.exists()) {
+            throw new GradleException("Expected jar not found: ${jarFile}")
+        }
+        def found = false
+        def jf = new java.util.jar.JarFile(jarFile)
+        try {
+            def entries = jf.entries()
+            while (entries.hasMoreElements()) {
+                def e = entries.nextElement()
+                if (e.name == 'BOOT-INF/classes/com/thegamersplace/TheGamersClientServer.class') {
+                    found = true
+                    break
+                }
+            }
+        } finally {
+            jf.close()
+        }
+        if (!found) {
+            throw new GradleException("Main class com.thegamersplace.TheGamersClientServer not found inside ${jarFile}")
+        }
+    }
+}
+// Ensure verification runs after building the bootJar in CI
+bootJar.finalizedBy tasks.named('verifyMainInJar')
