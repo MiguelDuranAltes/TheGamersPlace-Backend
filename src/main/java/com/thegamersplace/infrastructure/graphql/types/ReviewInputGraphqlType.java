@@ -7,7 +7,7 @@ import java.util.Objects;
  */
 @javax.annotation.processing.Generated(
     value = "com.kobylynskyi.graphql.codegen.GraphQLCodegen",
-    date = "2026-05-24T14:07:01+0200"
+    date = "2026-05-26T20:49:20+0200"
 )
 public class ReviewInputGraphqlType implements java.io.Serializable {
 
@@ -85,7 +85,7 @@ public class ReviewInputGraphqlType implements java.io.Serializable {
 
     @javax.annotation.processing.Generated(
         value = "com.kobylynskyi.graphql.codegen.GraphQLCodegen",
-        date = "2026-05-24T14:07:01+0200"
+        date = "2026-05-26T20:49:20+0200"
     )
     public static class Builder {
 

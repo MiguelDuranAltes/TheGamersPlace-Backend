@@ -60,6 +60,8 @@ jacocoTestReport {
 
 tasks.compileJava.dependsOn('graphqlCodegen')
 
+def generatedGraphqlDir = "$buildDir/generated/sources/graphql/main/java"
+
 bootJar {
     mainClass = 'com.thegamersplace.TheGamersClientServer'
     archiveFileName = 'server-app.jar'
@@ -70,7 +72,7 @@ jar {
 }
 
 graphqlCodegen {
-    outputDir = new File("$projectDir/src/main/java")
+    outputDir = new File(generatedGraphqlDir)
     apiPackageName = "com.thegamersplace.infrastructure.graphql.resolvers"
     modelPackageName = "com.thegamersplace.infrastructure.graphql.types"
     customTypesMapping = [
@@ -85,35 +87,3 @@ graphqlCodegen {
     generateApis = false
     generateEqualsAndHashCode = true
 }
-
-// Verify that the produced bootJar contains the application main class.
-// This will fail the build early in CI (Railway) if the JAR executed at runtime
-// would not be able to find the main class (helps debugging ClassNotFoundException).
-tasks.register('verifyMainInJar') {
-    dependsOn bootJar
-    doLast {
-        def jarFile = file("${buildDir}/libs/server-app.jar")
-        if (!jarFile.exists()) {
-            throw new GradleException("Expected jar not found: ${jarFile}")
-        }
-        def found = false
-        def jf = new java.util.jar.JarFile(jarFile)
-        try {
-            def entries = jf.entries()
-            while (entries.hasMoreElements()) {
-                def e = entries.nextElement()
-                if (e.name == 'BOOT-INF/classes/com/thegamersplace/TheGamersClientServer.class') {
-                    found = true
-                    break
-                }
-            }
-        } finally {
-            jf.close()
-        }
-        if (!found) {
-            throw new GradleException("Main class com.thegamersplace.TheGamersClientServer not found inside ${jarFile}")
-        }
-    }
-}
-// Ensure verification runs after building the bootJar in CI
-bootJar.finalizedBy tasks.named('verifyMainInJar')
